@@ -6,10 +6,6 @@ from time import sleep
 from tkinter import *
 from PIL import Image, ImageTk
 
-
-
-
-
 SPOTIFY_GET_CURRENT_TRACK_URL = "https://api.spotify.com/v1/me/player/currently-playing"
 current_image_link = None
 
@@ -98,7 +94,7 @@ root.configure(bg='green')
 #set white to be transparent
 root.attributes('-transparentcolor','green')
 
-root.geometry("500x300")
+root.geometry("800x300")
 img = ImageTk.PhotoImage(Image.open("img.png"))
 root.title("Spotify Now Playing")
 
@@ -153,5 +149,6 @@ while True:
     #    access_token = refresh(refresh_token, base64)
     #    ref_count = 0
     
+    #just comment the 2 lines below 
     root.after(5000, update_image)
     root.mainloop()
