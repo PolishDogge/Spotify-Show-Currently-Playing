@@ -4,6 +4,17 @@ from tkinter import Tk, Label
 from PIL import ImageTk, Image
 from secret import *
 
+options = {
+        "background_color": "green",
+        "transparent_background": True,
+        "font_size": 45,
+        "font_color": "white",
+        "picture_width": 250,
+        "picture_height": 250,
+        "window_width": 850,
+        "window_height": 300
+}
+
 class Spotify:
     def __init__(self, refresh_token, base64_hash):
         self.refresh_token = refresh_token
@@ -19,7 +30,7 @@ class Spotify:
         response = response.json()
         artists = [artist for artist in response['item']['artists']]
         artist_names = ', '.join([artist['name'] for artist in artists])
-        if artist_names == '': # I love spotify
+        if artist_names == '': # I love Spotify
             artist_names = '# Unknown #'
         response_data = {
             "name": response['item']['name'],
@@ -47,26 +58,43 @@ class Spotify:
             return True
 
         current_time = int(time.time())
-        expiration_time = self.token_generated_at + self.token_expires_in - 3500
+        expiration_time = self.token_generated_at + self.token_expires_in - 300
         return current_time >= expiration_time
 
 class SpotifyGUI:
-    def __init__(self, spotify):
+    def __init__(self, spotify, options):
         self.spotify = spotify
+        self.options = options
+
         self.root = Tk()
-        self.root.geometry("850x300")
+        self.root.geometry(f"{options['window_width']}x{options['window_height']}")
         self.root.title("Spotify Now Playing")
-        self.root.configure(bg='green')
-        self.root.attributes('-transparentcolor', 'green')
+        self.root.configure(bg=options['background_color'])
+
+        if options['transparent_background']:
+            self.root.attributes('-transparentcolor', options['background_color'])
+
         self.panel = Label(self.root)
         self.panel.grid(row=0, column=0, rowspan=3, columnspan=3)
+
         self.labels = [
-            Label(self.root, text="placeholder", font=("Arial", 45), anchor="center"),
-            Label(self.root, text="placeholder", font=("Arial", 30), anchor="center")
+            Label(
+                self.root,
+                text="placeholder",
+                font=("Arial", options['font_size']),
+                anchor="center"
+            ),
+            Label(
+                self.root,
+                text="placeholder",
+                font=("Arial", options['font_size'] - 5),
+                anchor="center"
+            )
         ]
+
         for i, label in enumerate(self.labels):
             label.grid(row=i + 1, column=3, sticky="n")
-            label.configure(bg='green', fg='white', wraplength=500)
+            label.configure(bg=options['background_color'], fg=options['font_color'], wraplength=500)
 
         self.update_tk()
 
@@ -89,9 +117,9 @@ class SpotifyGUI:
             with open('image.png', 'wb') as file:
                 file.write(image.content)
 
-            #cstm
+            # Customization
             img = Image.open("image.png")
-            img = img.resize((250, 250), Image.Resampling.LANCZOS)
+            img = img.resize((self.options['picture_width'], self.options['picture_height']), Image.Resampling.LANCZOS)
             img = img.save("image.png")
 
             img = ImageTk.PhotoImage(Image.open("image.png"))
@@ -103,8 +131,9 @@ class SpotifyGUI:
     def start(self):
         self.root.mainloop()
 
+
 if __name__ == "__main__":
     spotify = Spotify(REFRESH_TOKEN, BASE64_HASH)
     spotify.refresh()
-    gui = SpotifyGUI(spotify)
+    gui = SpotifyGUI(spotify, options)
     gui.start()
