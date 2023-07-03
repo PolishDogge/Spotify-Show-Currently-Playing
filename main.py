@@ -1,154 +1,110 @@
 import requests
+import time
+from tkinter import Tk, Label
+from PIL import ImageTk, Image
 from secret import *
-import urllib.request
 
-from time import sleep
-from tkinter import *
-from PIL import Image, ImageTk
+class Spotify:
+    def __init__(self, refresh_token, base64_hash):
+        self.refresh_token = refresh_token
+        self.base64_hash = base64_hash
+        self.access_token = None
+        self.token_generated_at = None
+        self.token_expires_in = None
 
-SPOTIFY_GET_CURRENT_TRACK_URL = "https://api.spotify.com/v1/me/player/currently-playing"
-current_image_link = None
-
-failed_amount = 0
-
-class spot:                
-    def get_current_track(access_token):
-        global failed_amount
+    def get_currently_playing(self):
         response = requests.get(
-            SPOTIFY_GET_CURRENT_TRACK_URL,
-            headers={
-                "Authorization": f"Bearer {access_token}"
-            }
+            CURRENT_PLAYING_URL, headers={"Authorization": f"Bearer {self.access_token}"}
         )
-        try:
-            json_resp = response.json()
-            failed_amount = 0
-        except:
-            failed_amount += 1
-            print("Error: " + str(response.status_code))
-            print('Retrying...')
-            sleep(1)
-
-            if failed_amount > 5:
-                print('Try to stop and start music on spotify')
-            if failed_amount > 10:
-                print('Failed to get current track 10 times in a row')
-                print('Exiting program')
-                exit()
-            spot.get_current_track(access_token)
-
-        try:
-            track_id = json_resp['item']['id']
-            track_name = json_resp['item']['name']
-            artists = [artist for artist in json_resp['item']['artists']]
-            image_ = json_resp['item']["album"]["images"][1]["url"]
-
-            link = json_resp['item']['external_urls']['spotify']
-            currently_at = json_resp['progress_ms']
-            max_duration = json_resp['item']['duration_ms']
-            artist_names = ', '.join([artist['name'] for artist in artists])
-        except:
-            spot.get_current_track(access_token)
-
-
-        current_track_info = {
-        	"id": track_id,
-        	"track_name": track_name,
-        	"artists": artist_names,
-        	"link": link,
-            "image": image_,
-            "currently_at": currently_at,
-            "max_duration": max_duration,
+        response = response.json()
+        artists = [artist for artist in response['item']['artists']]
+        artist_names = ', '.join([artist['name'] for artist in artists])
+        if artist_names == '': # I love spotify
+            artist_names = '# Unknown #'
+        response_data = {
+            "name": response['item']['name'],
+            "artists": artist_names,
+            "imageLink": response['item']["album"]["images"][1]["url"],
+            "lastImage": ""
         }
+        return response_data
 
-        return current_track_info
+    def refresh(self):
+        query = "https://accounts.spotify.com/api/token"
+        response = requests.post(query, data={
+            "grant_type": "refresh_token",
+            "refresh_token": self.refresh_token
+        }, headers={
+            "Authorization": f"Basic {self.base64_hash}"
+        })
+        response_json = response.json()
+        self.access_token = response_json.get("access_token")
+        self.token_generated_at = int(time.time())
+        self.token_expires_in = response_json.get("expires_in")
 
+    def is_token_expired(self):
+        if self.token_generated_at is None or self.token_expires_in is None:
+            return True
 
-    def update_image(current_track_info):
-        global current_image_link
-        if current_track_info['image'] != None:
-            if current_image_link != current_track_info['image']:
-                urllib.request.urlretrieve(current_track_info['image'], "img.png")
-                img = Image.open("img.png")
-                img = img.resize((150, 150), Image.ANTIALIAS)
-                img = img.save("img.png")
-                print("Image updated")
-        current_image_link = current_track_info['image']
+        current_time = int(time.time())
+        expiration_time = self.token_generated_at + self.token_expires_in - 3500
+        return current_time >= expiration_time
 
+class SpotifyGUI:
+    def __init__(self, spotify):
+        self.spotify = spotify
+        self.root = Tk()
+        self.root.geometry("850x300")
+        self.root.title("Spotify Now Playing")
+        self.root.configure(bg='green')
+        self.root.attributes('-transparentcolor', 'green')
+        self.panel = Label(self.root)
+        self.panel.grid(row=0, column=0, rowspan=3, columnspan=3)
+        self.labels = [
+            Label(self.root, text="placeholder", font=("Arial", 45), anchor="center"),
+            Label(self.root, text="placeholder", font=("Arial", 30), anchor="center")
+        ]
+        for i, label in enumerate(self.labels):
+            label.grid(row=i + 1, column=3, sticky="n")
+            label.configure(bg='green', fg='white', wraplength=500)
 
+        self.update_tk()
 
-def convert_to_minutes(seconds):
-    seconds = int(seconds)
-    minutes = seconds // 60000
-    seconds = seconds % 60000
-    seconds = seconds // 1000
-    if seconds < 10:
-        seconds = '0' + str(seconds)
-    return str(minutes) + ':' + str(seconds)
+    def update_tk(self):
+        song_data = self.spotify.get_currently_playing()
+        self.update_image(song_data)
+        self.labels[0].config(text=song_data["name"])
+        self.labels[1].config(text=song_data["artists"])
 
-# set up tkinter
+        if self.spotify.is_token_expired():
+            self.spotify.refresh()
+            print('Updated access token')
 
-root = Tk()
-root.configure(bg='green')
+        self.root.after(5000, self.update_tk)
 
-#set white to be transparent
-root.attributes('-transparentcolor','green')
+    def update_image(self, data):
+        if data["lastImage"] != data["imageLink"]:
+            data["lastImage"] = data["imageLink"]
+            image = requests.get(data["imageLink"])
+            with open('image.png', 'wb') as file:
+                file.write(image.content)
 
-root.geometry("800x300")
-img = ImageTk.PhotoImage(Image.open("img.png"))
-root.title("Spotify Now Playing")
+            #cstm
+            img = Image.open("image.png")
+            img = img.resize((250, 250), Image.Resampling.LANCZOS)
+            img = img.save("image.png")
 
-panel = Label(root, image = img)
-panel.grid(row=0,column=0, rowspan=3, columnspan=3)
+            img = ImageTk.PhotoImage(Image.open("image.png"))
+            self.panel.config(image=img)
+            self.panel.image = img
+        else:
+            print("Image already up to date")
 
+    def start(self):
+        self.root.mainloop()
 
-# set up labels 
-l1 = Label(root, text = "placeholder", font=("Arial", 30))
-l2 = Label(root, text = "placeholder 2", font=("Arial", 30))
-l1.grid(row = 1, column = 3, sticky=N)
-l2.grid(row = 2, column = 3, sticky=N)
-l1.configure(bg='green', fg='white')
-l2.configure(bg='green', fg='white')
-ref_count = 0
-
-def update_image():
-    global l1, l2, panel, img, x, ref_count, access_token
-    x = spot.get_current_track(access_token)
-    spot.update_image(x)
-    img = ImageTk.PhotoImage(Image.open("img.png"))
-    l1.configure(text=x['track_name'])
-    l2.configure(text=x['artists'])
-    panel.configure(image=img)
-    print("Updated")
-    ref_count += 1
-    print(f'{ref_count} / 400')
-    if ref_count == 400:
-        access_token = refresh(refresh_token, base64)
-        ref_count = 0
-    root.after(10000, update_image)
-
-
-while True:
-    global x
-    x = spot.get_current_track(access_token)
-    spot.update_image(x)
-
-    # this is a text version of the program
-
-    #x['currently_at'] = convert_to_minutes(x['currently_at'])
-    #x['max_duration'] = convert_to_minutes(x['max_duration'])
-    #print('='*10)
-    #print("Current track: " + x['track_name'])
-    #print("Artists: " + x['artists'])
-    #print("Link: " + x['link'])
-    #print(f"Currently at: {x['currently_at']} / {x['max_duration']}")
-    #print('='*10)
-    #sleep(5)
-    #ref_count += 1
-    #if ref_count == 600:
-    #    access_token = refresh(refresh_token, base64)
-    #    ref_count = 0
-    
-    #just comment the 2 lines below 
-    root.after(5000, update_image)
-    root.mainloop()
+if __name__ == "__main__":
+    spotify = Spotify(REFRESH_TOKEN, BASE64_HASH)
+    spotify.refresh()
+    gui = SpotifyGUI(spotify)
+    gui.start()
