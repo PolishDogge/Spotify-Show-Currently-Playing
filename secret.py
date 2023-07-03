@@ -1,5 +1,4 @@
-from refresh import refresh
-spotify_id = ''
-refresh_token = ''
-base64 = ''
-access_token = refresh(refresh_token, base64)
+SPOTIFY_ID = ''
+REFRESH_TOKEN = ""
+BASE64_HASH = ''
+CURRENT_PLAYING_URL = ''
