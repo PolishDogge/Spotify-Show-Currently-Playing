@@ -4,15 +4,19 @@ from tkinter import Tk, Label
 from PIL import ImageTk, Image
 from secret import *
 
+lastImage = None
 options = {
-        "background_color": "green",
-        "transparent_background": True,
-        "font_size": 45,
+        "background_color": "magenta",
+        "transparent_background": False,
+        
+        "font_size": 45, # for header, 2nd line is -15 px
         "font_color": "white",
-        "picture_width": 250,
-        "picture_height": 250,
-        "window_width": 850,
-        "window_height": 300
+        "font": "Arial", # InputMono Black
+
+        "picture_width": 300,
+        "picture_height": 300,
+        "window_width": 1500,
+        "window_height": 450
 }
 
 class Spotify:
@@ -28,15 +32,18 @@ class Spotify:
             CURRENT_PLAYING_URL, headers={"Authorization": f"Bearer {self.access_token}"}
         )
         response = response.json()
-        artists = [artist for artist in response['item']['artists']]
+        try:
+            artists = [artist for artist in response['item']['artists']]
+        except TypeError:
+            return response_data
         artist_names = ', '.join([artist['name'] for artist in artists])
         if artist_names == '': # I love Spotify
             artist_names = '# Unknown #'
+
         response_data = {
             "name": response['item']['name'],
             "artists": artist_names,
             "imageLink": response['item']["album"]["images"][1]["url"],
-            "lastImage": ""
         }
         return response_data
 
@@ -61,6 +68,8 @@ class Spotify:
         expiration_time = self.token_generated_at + self.token_expires_in - 300
         return current_time >= expiration_time
 
+
+
 class SpotifyGUI:
     def __init__(self, spotify, options):
         self.spotify = spotify
@@ -75,26 +84,27 @@ class SpotifyGUI:
             self.root.attributes('-transparentcolor', options['background_color'])
 
         self.panel = Label(self.root)
-        self.panel.grid(row=0, column=0, rowspan=3, columnspan=3)
+        self.panel.grid(row=0, column=0, rowspan=3, columnspan=3, padx=10, pady=10)
+        self.panel.config(bd=0, highlightthickness=2 , highlightcolor='black', highlightbackground='black')
 
         self.labels = [
             Label(
                 self.root,
                 text="placeholder",
-                font=("Arial", options['font_size']),
+                font=(options['font'], options['font_size']),
                 anchor="center"
             ),
             Label(
                 self.root,
                 text="placeholder",
-                font=("Arial", options['font_size'] - 5),
+                font=(options['font'], options['font_size'] - 15),
                 anchor="center"
             )
         ]
 
         for i, label in enumerate(self.labels):
             label.grid(row=i + 1, column=3, sticky="n")
-            label.configure(bg=options['background_color'], fg=options['font_color'], wraplength=500)
+            label.configure(bg=options['background_color'], fg=options['font_color'], wraplength=int(options["window_width"]*0.7))
 
         self.update_tk()
 
@@ -111,13 +121,15 @@ class SpotifyGUI:
         self.root.after(5000, self.update_tk)
 
     def update_image(self, data):
-        if data["lastImage"] != data["imageLink"]:
-            data["lastImage"] = data["imageLink"]
+        global lastImage
+        if lastImage != data["imageLink"]:
+            lastImage = data["imageLink"]
             image = requests.get(data["imageLink"])
             with open('image.png', 'wb') as file:
                 file.write(image.content)
+            print('downloaded')
 
-            # Customization
+            # Cstm
             img = Image.open("image.png")
             img = img.resize((self.options['picture_width'], self.options['picture_height']), Image.Resampling.LANCZOS)
             img = img.save("image.png")
@@ -126,7 +138,8 @@ class SpotifyGUI:
             self.panel.config(image=img)
             self.panel.image = img
         else:
-            print("Image already up to date")
+            #print("Image already up to date")
+            pass
 
     def start(self):
         self.root.mainloop()
