@@ -7,6 +7,7 @@ This Python application tracks the currently playing song on Spotify and display
 - Displays the name of the currently playing song and the associated artist.
 - Automatically refreshes the access token when it expires.
 - Updates the album artwork of the currently playing song automatically.
+- Customisation options (images below)
 
 ## Setup Instructions
 
@@ -29,6 +30,11 @@ Ensure you have Python installed on your system. Additionally, install the requi
 4. Paste the code into the application when prompted.
 5. Wait a few seconds for the application to process the code.
 
+
+## Images
+![preview 1 STOCK](/img/preview1.png)
+![preview 2](/img/preview2.png)
+![preview 3](/img/preview3.png)
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
