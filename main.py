@@ -13,7 +13,7 @@ def setUp():
     client_id = ''
     redirect = 'https://github.com/PolishDogge/Spotify-Show-Currently-Playing/README.md'
     client_secret = ''
-    
+
     print(f'Authorize the app and follow the given instruction\n \nhttps://accounts.spotify.com/authorize?client_id={client_id}&response_type=code&redirect_uri={redirect}&scope=user-read-currently-playing')
     cde = input('Put the obtained code here\n')
     tokenlink = 'https://accounts.spotify.com/api/token'
@@ -45,26 +45,6 @@ def setUp():
         print(respon.text)
         exit()
 
-
-try:
-    with open('options.txt', 'r') as opt:
-        options = json.load(opt)
-        opt.close()
-except FileNotFoundError:
-    options = {
-        "background_color": "magenta",
-        "transparent_background": False,
-
-        "font_size": 45, # for header, 2nd line is -15 px
-        "font_color": "white",
-        "font": "InputMono Black", # InputMono Black
-
-        "picture_width": 300,
-        "picture_height": 300,
-        "window_width": 1500,
-        "window_height": 550
-    }
-
 try:
     appdata_dir = Path(os.getenv('LOCALAPPDATA')) / 'CurrentlyPlaying'
     appdata_dir.mkdir(parents=True, exist_ok=True)
@@ -77,6 +57,27 @@ except FileNotFoundError:
     print('Press ENTER to finish setup and restart the app.')
     input()
     exit()
+
+
+try:
+    with open('options.txt', 'r') as opt:
+        options = json.load(opt)
+        print('loaded options file')
+except (FileNotFoundError, json.JSONDecodeError):
+    options = {
+        "background_color": "magenta",
+        "transparent_background": False,
+        "font_size": 45,
+        "font_color": "white",
+        "font": "InputMono Black",
+        "picture_width": 300,
+        "picture_height": 300,
+        "window_width": 1500,
+        "window_height": 550
+    }
+    with open('options.txt', 'w') as s:
+        json.dump(options, s, indent=4)
+
 
 
 lastImage = None
