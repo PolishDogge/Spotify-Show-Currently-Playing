@@ -10,13 +10,17 @@ This Python application tracks the currently playing song on Spotify and display
 
 ## Setup Instructions
 
-### 1. Dependencies Installation
+### 1. Setup Spotify application
+
+Set up your [Spotify application](https://developer.spotify.com/dashboard), get the clientID and Client secret and put them into the code. 
+
+### 2. Dependencies Installation
 
 Ensure you have Python installed on your system. Additionally, install the required Python dependencies using pip:
 
 `pip install -r requirements.txt`
 
-### 2. Authorization Setup
+### 3. Authorization Setup
 
 1. Run the application.
 2. Follow the provided Spotify authorization link in your browser.
